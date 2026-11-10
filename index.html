@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monitoring Perizinan & Sitac ODC</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+:root{--bg:#eef2f6;--panel:#fff;--line:#d3dbe4;--tx:#14202e;--mut:#5b6b7e;--acc:#0b6bb8;--red:#c62f3a;--amb:#b87400;--grn:#18864b;--map:#e4ebf2;--grid:#cdd7e2;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1622;--panel:#122133;--line:#223a54;--tx:#e3edf7;--mut:#8aa1b8;--acc:#4cb3ff;--red:#ff5560;--amb:#ffb02e;--grn:#2fd27a;--map:#0a1b2b;--grid:#14304a}}
+:root[data-theme="dark"]{--bg:#0c1622;--panel:#122133;--line:#223a54;--tx:#e3edf7;--mut:#8aa1b8;--acc:#4cb3ff;--red:#ff5560;--amb:#ffb02e;--grn:#2fd27a;--map:#0a1b2b;--grid:#14304a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:17px;margin:0;font-weight:600}
+.sub{color:var(--mut);font-size:12px}
+.badge{background:var(--amb);color:#111;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600}
+button,select,input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+button.p{background:var(--acc);color:#04121f;border-color:var(--acc);font-weight:600}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+main{padding:14px 16px;display:grid;gap:14px;max-width:1500px;margin:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.k{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:6px;padding:10px 12px}
+.k b{display:block;font-size:26px;font-weight:600;line-height:1.1}
+.k span{color:var(--mut);font-size:12px}
+.k.r{border-left-color:var(--red)}.k.a{border-left-color:var(--amb)}.k.g{border-left-color:var(--grn)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row2{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
+@media(max-width:900px){.row2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;min-width:0}
+.card h2{font-size:14px;margin:0 0 8px;font-weight:600}
+.mapw{position:relative;height:460px;background:var(--map);border-radius:4px;overflow:hidden}
+#map{width:100%;height:100%;min-height:460px;border-radius:4px;z-index:1}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.sto{display:grid;grid-template-columns:44px 1fr 56px;gap:8px;align-items:center;margin:5px 0;font-size:13px}
+.sb{height:10px;border-radius:5px;background:var(--line);overflow:hidden;display:flex}
+.sb i{display:block;height:100%}
+.ro{font-weight:600;margin:10px 0 2px;color:var(--acc)}
+.tw{overflow-x:auto;max-height:520px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);z-index:2}
+td input,td select{padding:2px 4px;font-size:12px}
+tr.sel{outline:2px solid var(--acc);outline-offset:-2px}
+.empty{padding:20px;color:var(--mut);text-align:center}
+#dp{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--panel);border-left:1px solid var(--line);z-index:1000;overflow-y:auto;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));box-shadow:-8px 0 24px #0006}
+#dp[hidden]{display:none}
+.dph{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.dph h2{margin:0;font-size:16px}
+.phs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.ph b{display:block;font-size:12px;margin-bottom:4px}
+.ph img,.nop{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block}
+.nop{display:grid;place-items:center;color:var(--mut);font-size:12px;background:var(--bg)}
+.up{display:inline-block;margin-top:4px;color:var(--acc);cursor:pointer;font-size:12px}
+.pb{height:12px;display:flex;border-radius:6px;overflow:hidden;background:var(--line)}
+#dp h2{font-size:14px;margin:12px 0 6px}
+#dp table{min-width:0;width:100%}
+#dp td,#dp th{padding:3px 4px;white-space:normal}
+#dp td input,#dp td select{width:100%}
+#tb tr{cursor:pointer}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none}
+.modal-content{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:min(700px,100%);max-height:90vh;overflow-y:auto;padding:16px}
+</style>
+</head>
+<body>
+<header>
+ <div>
+  <h1>Monitoring Perizinan & Sitac ODC</h1>
+  <div class="sub">RO PLK dan RO MTW · <span id="src"></span></div>
+ </div>
+ <div class="bar">
+  <span class="badge" id="demo">DATA CONTOH</span>
+  <span class="badge" id="roleBadge" style="background:var(--acc);color:#fff;cursor:pointer" title="Klik untuk ganti peran">Editor</span>
+  <button id="btnField" class="p">Daftar Tugas Lapangan</button>
+  <button id="btnLog">Log Perubahan</button>
+  <button class="p" id="imp">Impor CSV</button>
+  <button id="exp">Ekspor CSV</button>
+  <button id="th">Terang/Gelap</button>
+  <input type="file" id="file" accept=".csv,.tsv,.txt" hidden>
+ </div>
+</header>
+<main>
+ <section class="kpis" id="kpis"></section>
+ <section class="bar">
+  <select id="fro"><option value="">Semua RO</option><option>PLK</option><option>MTW</option></select>
+  <select id="fsto"></select>
+  <select id="fst">
+   <option value="">Semua status</option>
+   <option value="none">Belum izin & sitac</option>
+   <option value="noizin">Belum ada izin</option>
+   <option value="nositac">Belum ada sitac</option>
+   <option value="part">Sebagian lengkap</option>
+   <option value="ok">Lengkap</option>
+   <option value="exp">Izin segera habis</option>
+  </select>
+  <input id="q" placeholder="Cari ODC / alamat" style="min-width:200px">
+  <span class="sub" id="cnt"></span>
+ </section>
+ <section class="row2">
+  <div class="card">
+   <h2>Peta Sebaran ODC (Leaflet)</h2>
+   <div class="mapw"><div id="map"></div></div>
+   <div class="leg">
+    <span><i class="dot" style="background:var(--red)"></i>Belum izin & sitac</span>
+    <span><i class="dot" style="background:var(--amb)"></i>Sebagian lengkap</span>
+    <span><i class="dot" style="background:var(--grn)"></i>Lengkap</span>
+    <span>Klik titik pada peta untuk melihat detail ODC</span>
+   </div>
+  </div>
+  <div class="card">
+   <h2>Progres per STO</h2>
+   <div id="sto"></div>
+  </div>
+ </section>
+ <section class="card">
+  <h2>Daftar ODC</h2>
+  <div class="tw">
+   <table>
+    <thead>
+     <tr>
+      <th>ODC</th><th>STO</th><th>Alamat</th><th>Tipe</th><th>WASAKA</th><th>Izin</th><th>Masa Berlaku Izin</th><th>Sitac</th><th>Link Dokumen (Drive)</th><th>Lokasi</th>
+     </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+   </table>
+  </div>
+  <div class="sub" style="margin-top:6px">Data tersimpan di browser (localStorage) dan siap disinkronkan ke backend Google Apps Script.</div>
+ </section>
+</main>
+
+<aside id="dp" hidden aria-label="Detail ODC">
+ <div class="dph"><h2 id="dpt"></h2><button id="dpc">Tutup</button></div>
+ <div id="dpb"></div>
+</aside>
+
+<!-- Modal Daftar Tugas Lapangan -->
+<div id="modalField" class="modal" hidden>
+ <div class="modal-content">
+  <div class="dph"><h2>Daftar Tugas Lapangan (Belum Izin / Sitac)</h2><button id="closeField">Tutup</button></div>
+  <p class="sub">Salin atau bagikan daftar ini kepada petugas lapangan untuk eksekusi sitac / perizinan.</p>
+  <div class="tw" style="max-height:350px; margin:10px 0;">
+   <table id="fieldTable"><thead><tr><th>ODC</th><th>STO</th><th>Alamat</th><th>Status Izin</th><th>Status Sitac</th></tr></thead><tbody id="fieldTb"></tbody></table>
+  </div>
+  <button class="p" id="copyField">Salin Teks untuk WhatsApp</button>
+ </div>
+</div>
+
+<!-- Modal Log Perubahan -->
+<div id="modalLog" class="modal" hidden>
+ <div class="modal-content">
+  <div class="dph"><h2>Log Perubahan Data</h2><button id="closeLog">Tutup</button></div>
+  <div class="tw" style="max-height:350px; margin:10px 0;">
+   <table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aksi / ODC</th><th>Detail</th></tr></thead><tbody id="logTb"></tbody></table>
+  </div>
+ </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/z9VMkNkN8v1rvWqV4a98=" crossorigin=""></script>
+<script>
+const RO={PLK:['PLK','PYM','KSO','KRI','PPS','KKP','KKN'],MTW:['MTW','BNT','AMP','PRC','TML']};
+const roOf=s=>RO.PLK.includes(s)?'PLK':RO.MTW.includes(s)?'MTW':'-';
+const SAMPLE=`ODC-AMP-FA|AMP|JL. AMPAH - TAMIANG|C|288|-1.800405|115.149710|0
+ODC-AMP-FB|AMP|JL. AMPAH - TAMIANG|C|288|-1.810737|115.164842|0
+ODC-AMP-FC|AMP|JL. AMPAH KOTA (SDN4 AMPAH)|C|288|-1.789715|115.151166|0
+ODC-BNT-FA|BNT|JL. PELITA RAYA|B|48|-1.718851|114.845545|0
+ODC-BNT-FB|BNT|JL. PAHLAWAN|C|288|-1.714872|114.852447|0
+ODC-BNT-FC|BNT|JL. SOEKARNO HATTA|C|144|-1.683461|114.907445|0
+ODC-MTW-FA|MTW|KOMP. PERUM PERMATA INDAH|C|288|-0.93702|114.88893|0
+ODC-MTW-FB|MTW|JL. TAMAN REMAJA|C|288|-0.943229|114.891917|0
+ODC-MTW-FC|MTW|JL. PRAMUKA|C|288|-0.94985|114.89573|0
+ODC-MTW-FD|MTW|JL. AHMAD YANI|B|48|-0.947273|114.900688|0
+ODC-KKN-FA|KKN|JL. DIPONEGORO|C|288|-1.124677|113.85802|0
+ODC-KKN-FB|KKN|JL. SABIRIN MUKHTAR|C|288|-1.102517|113.865536|0
+ODC-KKN-FC|KKN|JL. TUGU TEWAH|C|288|-1.052866|113.726397|0
+ODC-KKP-FA|KKP|JL. TAMBUN BUNGAI|C|288|-3.014157|114.38626|0
+ODC-KKP-FB|KKP|JL. JENDERAL SUDIRMAN|C|288|-3.023617|114.391483|1
+ODC-KKP-FC|KKP|JL. TAMBUN BUNGAI|B|48|-3.00805|114.388967|0
+ODC-KKP-FW|KKP|JL. CILIK RIWUT|C|288|-3.007769|114.401414|1
+ODC-KSO-FA|KSO|JL. TRANS KALIMANTAN|C|288|-1.88576|113.39986|0
+ODC-KSO-FB|KSO|JL. TRANS KALIMANTAN|C|288|-1.88737|113.41325|0
+ODC-KSO-FD|KSO|JL. SOEKARNO HATTA|B|48|-1.875609|113.423849|0
+ODC-KRI-FG|KRI|JL. PEMBANGUNAN|C|144|-1.897977|113.297113|0
+ODC-KRI-FK|KRI|JL. TJILIK RIWUT|C|288|-1.893464|113.296831|0`;
+
+let D=[], ST={}, sel=null, logs=[];
+let userRole = localStorage.getItem('odc-role') || 'Editor'; 
+const GAS_URL = localStorage.getItem('odc-gas-url') || ''; 
+
+const $=id=>document.getElementById(id);
+const IZ=['Belum','Proses','Terbit'], SI=['Belum','Proses','Lengkap'];
+
+try{ST=JSON.parse(localStorage.getItem('odc-st-v1')||'{}')}catch(e){ST={}}
+try{logs=JSON.parse(localStorage.getItem('odc-logs-v1')||'[]')}catch(e){logs=[]}
+
+const save=()=>{
+  try{localStorage.setItem('odc-st-v1',JSON.stringify(ST))}catch(e){}
+  try{localStorage.setItem('odc-logs-v1',JSON.stringify(logs.slice(0,100)))}catch(e){}
+};
+
+function addLog(action, odcId, detail){
+  const item = { time: new Date().toLocaleString('id-ID'), role: userRole, action, odc: odcId, detail };
+  logs.unshift(item);
+  save();
+}
+
+function loadSample(){
+  D=SAMPLE.split('
+').map((l,i)=>{
+    const p=l.split('|'); const h=(i*7)%5;
+    return {odc:p[0],sto:p[1],alamat:p[2],tipe:p[3],kap:p[4],lat:+p[5],lon:+p[6],was:p[7]==='1',izin:h<2?'Terbit':h==2?'Proses':'Belum',sitac:h==0?'Lengkap':h==3?'Proses':'Belum',exp:h==1?'2027-01-20':h==0?'2028-03-01':'',link:''};
+  });
+}
+
+function g(o){const s=ST[o.odc]||{};return{izin:s.izin||o.izin||'Belum',sitac:s.sitac||o.sitac||'Belum',exp:s.exp??o.exp??'',link:s.link??o.link??''}}
+function cls(o){const s=g(o);if(s.izin==='Terbit'&&s.sitac==='Lengkap')return'ok';if(s.izin==='Belum'&&s.sitac==='Belum')return'none';return'part'}
+function expSoon(o){const e=g(o).exp;if(!e)return false;return (new Date(e)-Date.now())/864e5<=90}
+
+function fil(){
+  const r=$('fro').value, s=$('fsto').value, t=$('fst').value, q=$('q').value.toLowerCase();
+  return D.filter(o=>{
+    const x=g(o);
+    return (!r||roOf(o.sto)===r)&&(!s||o.sto===s)&&(!q||(o.odc+o.alamat).toLowerCase().includes(q))&&
+    (!t||(t==='ok'?cls(o)==='ok':t==='none'?cls(o)==='none':t==='part'?cls(o)==='part':t==='noizin'?x.izin==='Belum':t==='nositac'?x.sitac==='Belum':expSoon(o)))
+  });
+}
+
+function kpis(){
+  const n=D.length||1, c=k=>D.filter(o=>g(o)[k]===(k==='izin'?'Terbit':'Lengkap')).length;
+  const iz=c('izin'), si=c('sitac'), bi=D.filter(o=>g(o).izin==='Belum').length, bs=D.filter(o=>g(o).sitac==='Belum').length, w=D.filter(o=>o.was).length, ex=D.filter(expSoon).length;
+  const k=(v,l,c)=>`<div class="k ${c||''}"><b>${v}</b><span>${l}</span></div>`;
+  $('kpis').innerHTML=k(D.length,'Total ODC')+k(Math.round(iz/n*100)+'%','Izin terbit ('+iz+')','g')+k(Math.round(si/n*100)+'%','Sitac lengkap ('+si+')','g')+k(bi,'ODC belum ada izin','r')+k(bs,'ODC belum ada sitac','r')+k(ex,'Izin habis ≤ 90 hari','a')+k(Math.round(w/n*100)+'%','Sudah WASAKA ('+w+')')}
+
+function stoPanel(){
+  let h='';
+  for(const r of['PLK','MTW']){
+    h+=`<div class="ro">RO ${r}</div>`;
+    for(const s of RO[r]){
+      const a=D.filter(o=>o.sto===s), n=a.length, ok=a.filter(o=>cls(o)==='ok').length, pt=a.filter(o=>cls(o)==='part').length, no=n-ok-pt, p=v=>n?v/n*100:0;
+      h+=`<div class="sto"><span>${s}</span><div class="sb" title="${ok} lengkap, ${pt} sebagian, ${no} belum"><i style="width:${p(ok)}%;background:var(--grn)"></i><i style="width:${p(pt)}%;background:var(--amb)"></i><i style="width:${p(no)}%;background:var(--red)"></i></div><span>${n?ok+'/'+n:'–'}</span></div>`
+    }
+  }
+  $('sto').innerHTML=h;
+}
+
+function table(){
+  const a=fil(); $('cnt').textContent=a.length+' dari '+D.length+' ODC';
+  const opt=(L,v)=>L.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('');
+  const isEd = userRole === 'Editor';
+  $('tb').innerHTML=a.length?a.slice(0,300).map(o=>{
+    const x=g(o), id=o.odc;
+    return `<tr data-id="${E(id)}" class="${sel===id?'sel':''}">
+      <td>${E(id)}</td><td>${E(o.sto)}</td><td>${E(o.alamat)}</td><td>${o.tipe}${o.kap?' / '+o.kap:''}</td><td>${o.was?'Sudah':'Belum'}</td>
+      <td>${isEd?`<select data-k="izin">${opt(IZ,x.izin)}</select>`:x.izin}</td>
+      <td>${isEd?`<input type="date" data-k="exp" value="${E(x.exp)}">`:x.exp||'-'}</td>
+      <td>${isEd?`<select data-k="sitac">${opt(SI,x.sitac)}</select>`:x.sitac}</td>
+      <td>${isEd?`<input data-k="link" value="${E(x.link)}" placeholder="https://drive.google.com/…" size="26">`:`<a href="${E(x.link)}" target="_blank">${x.link?'Buka Link':'-'}</a>`}</td>
+      <td>${isFinite(o.lat)?`<a style="color:var(--acc)" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.lat},${o.lon}&t=k">Satelit</a> · <a style="color:var(--acc)" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.lat},${o.lon}">Peta</a>`:'-'}</td>
+    </tr>`
+  }).join(''):'<tr><td colspan="10" class="empty">Tidak ada ODC yang cocok dengan filter.</td></tr>';
+}
+
+function setupSto(){
+  const s=$('fsto'), r=$('fro').value;
+  const l=r?RO[r]:[...RO.PLK,...RO.MTW];
+  s.innerHTML='<option value="">Semua STO</option>'+l.map(x=>`<option>${x}</option>`).join('');
+}
+
+let map, markersLayer;
+function initMap(){
+  map = L.map('map').setView([-1.68, 114.85], 8);
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '&copy; Esri' });
+  sat.addTo(map);
+  L.control.layers({ "Satelit (Esri)": sat, "Peta Jalan (OSM)": osm }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+function drawMap(){
+  if(!map) return;
+  setTimeout(() => map.invalidateSize(), 100);
+  if(!markersLayer) return;
+  markersLayer.clearLayers();
+  const a = fil().filter(o=>isFinite(o.lat)&&isFinite(o.lon));
+  if(!a.length) return;
+  const latlngs = [];
+  a.forEach(o=>{
+    const c = cls(o);
+    const color = c==='ok' ? '#2fd27a' : c==='none' ? '#ff5560' : '#ffb02e';
+    const marker = L.circleMarker([o.lat, o.lon], {
+      radius: o.odc === sel ? 9 : 6,
+      fillColor: color,
+      color: o.odc === sel ? '#fff' : color,
+      weight: o.odc === sel ? 3 : 1,
+      opacity: 1,
+      fillOpacity: 0.9
+    });
+    const x = g(o);
+    marker.bindPopup(`<b>${E(o.odc)}</b> (${E(o.sto)})<br>${E(o.alamat)}<br>Izin: ${x.izin} | Sitac: ${x.sitac}`);
+    marker.on('click', () => {
+      sel = o.odc;
+      openD(sel);
+      table();
+      const r = document.querySelector(`tr[data-id="${sel}"]`);
+      if(r) r.scrollIntoView({block:'center'});
+    });
+    markersLayer.addLayer(marker);
+    latlngs.push([o.lat, o.lon]);
+  });
+  if(latlngs.length && !sel){
+    map.fitBounds(latlngs, { padding: [30, 30], maxZoom: 14 });
+  }
+}
+
+$('tb').addEventListener('change', e=>{
+  if(userRole !== 'Editor') { alert('Peran Anda Viewer. Hubungi Editor untuk mengubah data.'); table(); return; }
+  const k=e.target.dataset.k; if(!k) return;
+  const id=e.target.closest('tr').dataset.id;
+  put(id,{[k]:e.target.value});
+  addLog('Ubah Tabel', id, `${k} diubah ke ${e.target.value}`);
+  refresh(false);
+});
+
+function refresh(t=true){
+  kpis(); stoPanel(); if(t) table(); else {$('cnt').textContent=fil().length+' dari '+D.length+' ODC'}
+  drawMap();
+}
+
+['fro','fsto','fst','q'].forEach(i=>$(i).addEventListener('input',()=>{if(i==='fro')setupSto(); refresh();}));
+
+$('th').onclick=()=>{
+  const h=document.documentElement;
+  h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';
+};
+
+$('imp').onclick=()=>$('file').click();
+function parseCSV(t){
+  const d=(t.split('
+')[0].match(/	/g)||[]).length?'	':(t.split('
+')[0].split(';').length>t.split('
+')[0].split(',').length?';':',');
+  const R=[]; let r=[], f='', q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;
+    else if(c===d){r.push(f);f=''}
+    else if(c==='
+'||c===''){if(c===''&&t[i+1]==='
+')i++;r.push(f);R.push(r);r=[];f=''}
+    else f+=c;
+  }
+  if(f||r.length){r.push(f);R.push(r)}
+  return R;
+}
+
+$('file').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const R=parseCSV(rd.result), H=R[0].map(h=>h.trim().toUpperCase()), ix=n=>H.indexOf(n);
+    const I={odc:ix('ODC'),sto:ix('STO'),al:ix('ALAMAT'),tp:ix('TYPE ODC'),kp:ix('KAPASITAS'),la:ix('LATITUDE'),lo:ix('LONGITUDE'),wa:ix('SABUK ODC (WASAKA)'),iz:ix('IZIN'),si:ix('SITAC'),ex:ix('MASA BERLAKU IZIN'),li:ix('LINK DOKUMEN')};
+    if(I.odc<0||I.sto<0){alert('Kolom ODC dan STO tidak ditemukan.'); return}
+    const v=(r,i)=>i>=0?(r[i]||'').trim():'', num=s=>parseFloat(s.replace('°','').replace(',','.'));
+    D=R.slice(1).filter(r=>v(r,I.odc)).map(r=>({
+      odc:v(r,I.odc), sto:v(r,I.sto).toUpperCase(), alamat:v(r,I.al), tipe:v(r,I.tp).replace('ODC-',''), kap:v(r,I.kp), lat:num(v(r,I.la)), lon:num(v(r,I.lo)), was:/^SUDAH/i.test(v(r,I.wa)),
+      izin:IZ.find(x=>x.toLowerCase()===v(r,I.iz).toLowerCase())||'Belum', sitac:SI.find(x=>x.toLowerCase()===v(r,I.si).toLowerCase())||'Belum', exp:v(r,I.ex), link:v(r,I.li)
+    }));
+    $('demo').style.display='none'; $('src').textContent='Diimpor dari '+f.name+' ('+D.length+' ODC)';
+    sel=null; refresh(); addLog('Impor CSV', '-', `${f.name} (${D.length} ODC)`);
+  };
+  rd.readAsText(f); e.target.value='';
+};
+
+$('exp').onclick=()=>{
+  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+  const L=['ODC,STO,RO,ALAMAT,TYPE ODC,KAPASITAS,LATITUDE,LONGITUDE,SABUK ODC (WASAKA),IZIN,MASA BERLAKU IZIN,SITAC,LINK DOKUMEN'];
+  D.forEach(o=>{const x=g(o);L.push([o.odc,o.sto,roOf(o.sto),o.alamat,o.tipe,o.kap,o.lat,o.lon,o.was?'SUDAH WASAKA':'BELUM WASAKA',x.izin,x.exp,x.sitac,x.link].map(q).join(','))});
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+L.join('
+')); a.download='monitoring-odc.csv'; a.click();
+};
+
+const E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cur=null;
+
+function put(id,p){
+  ST[id]=Object.assign(ST[id]||{},p,{odc:id});
+  save();
+  if(GAS_URL){
+    fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'save', data: ST[id] }) }).catch(()=>{});
+  }
+}
+
+function openD(id){
+  const o=D.find(x=>x.odc===id); if(!o) return;
+  cur=id; const s=ST[id]||{}, kap=+o.kap||0, pu=+s.pu||0, pr=+s.pr||0, fr=Math.max(0,kap-pu-pr), tr=s.tray||[], pc=v=>kap?Math.min(100,v/kap*100):0;
+  const opt=(L,v)=>L.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('');
+  const isEd = userRole === 'Editor';
+  const ph=(k,t)=>`<div class="ph"><b>${t}</b>${s[k]?`<a href="${E(s[k])}" target="_blank" rel="noopener"><img src="${E(s[k])}" alt="${t}"></a>`:'<div class="nop">Belum ada foto</div>'}${isEd?`<label class="up">Unggah foto<input type="file" accept="image/*" data-up="${k}" hidden></label>`:''}</div>`;
+  
+  $('dpt').textContent=id;
+  $('dpb').innerHTML=`<p class="sub">STO ${E(o.sto)} · RO ${roOf(o.sto)}<br>${E(o.alamat)}<br>${E(o.tipe)} · ${kap} port</p>
+  <div class="phs">${ph('fo','Foto ODC (luar)')}${ph('fd','Foto dalam ODC')}</div>
+  <h2>Port</h2><div class="pb"><i style="width:${pc(pu)}%;background:var(--acc)"></i><i style="width:${pc(pr)}%;background:var(--red)"></i></div>
+  <p class="sub">Kapasitas ${kap} · Terpakai ${pu} · Rusak ${pr} · Kosong ${fr}</p>
+  ${isEd?`<div class="bar"><label>Terpakai <input type="number" min="0" data-p="pu" value="${pu}" style="width:80px"></label><label>Rusak <input type="number" min="0" data-p="pr" value="${pr}" style="width:80px"></label></div>`:''}
+  <h2>Isi tray & port</h2>
+  <table><tr><th>Tray</th><th>Port</th><th>Status</th><th>Keterangan</th>${isEd?'<th></th>':''}</tr>${tr.map((r,i)=>`<tr data-i="${i}"><td><input data-f="tray" value="${E(r.tray)}" ${isEd?'':'readonly'}></td><td><input data-f="port" value="${E(r.port)}" ${isEd?'':'readonly'}></td><td><select data-f="status" ${isEd?'':'disabled'}>${opt(['Terpakai','Kosong','Rusak'],r.status)}</select></td><td><input data-f="ket" value="${E(r.ket)}" ${isEd?'':'readonly'}></td>${isEd?`<td><button data-del="${i}">✕</button></td>`:''}</tr>`).join('')}</table>
+  ${isEd?'<button id="addt" style="margin-top:6px">Tambah baris</button>':''}`;
+  $('dp').hidden=false;
+}
+
+$('tb').addEventListener('click',e=>{if(e.target.closest('select,input,a'))return;const r=e.target.closest('tr');if(!r||!r.dataset.id)return;sel=r.dataset.id;openD(sel);table();drawMap()});
+$('dpc').onclick=()=>{$('dp').hidden=true;cur=null};
+
+$('dpb').addEventListener('change',async e=>{
+  if(userRole !== 'Editor') return;
+  const t=e.target, id=cur, s=ST[id]||{};
+  if(t.dataset.up){
+    const file = t.files[0];
+    if(!file) return;
+    if(GAS_URL){
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'upload', filename: file.name, mimeType: file.type, fileB64: reader.result.split(',')[1], odc: id, type: t.dataset.up }) });
+          const json = await res.json();
+          if(json.url){
+            put(id, { [t.dataset.up]: json.url });
+            addLog('Unggah Foto', id, `Foto ${t.dataset.up} diunggah ke Drive`);
+            openD(id);
+          }
+        } catch(err){ alert('Gagal mengunggah foto ke Drive.'); }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const url = URL.createObjectURL(file);
+      put(id, { [t.dataset.up]: url });
+      addLog('Unggah Foto (Lokal)', id, `Foto ${t.dataset.up} disimpan lokal`);
+      openD(id);
+    }
+    return;
+  }
+  if(t.dataset.p){put(id,{[t.dataset.p]:+t.value||0}); openD(id); return;}
+  const row=t.closest('tr');
+  if(t.dataset.f&&row){const tr=(s.tray||[]).map(r=>({...r})); tr[+row.dataset.i][t.dataset.f]=t.value; put(id,{tray:tr});}
+});
+
+$('dpb').addEventListener('click',e=>{
+  if(userRole !== 'Editor') return;
+  const id=cur, tr=((ST[id]||{}).tray||[]).slice();
+  if(e.target.id==='addt'){tr.push({tray:'',port:'',status:'Terpakai',ket:''}); put(id,{tray:tr}); openD(id);}
+  else if(e.target.dataset.del!=null){tr.splice(+e.target.dataset.del,1); put(id,{tray:tr}); openD(id);}
+});
+
+const modalField = $('modalField'), modalLog = $('modalLog');
+$('btnField').onclick = () => {
+  const list = D.filter(o => g(o).izin !== 'Terbit' || g(o).sitac !== 'Lengkap');
+  $('fieldTb').innerHTML = list.map(o => {
+    const x = g(o);
+    return `<tr><td><b>${E(o.odc)}</b></td><td>${E(o.sto)}</td><td>${E(o.alamat)}</td><td><span style="color:var(--red)">${x.izin}</span></td><td><span style="color:var(--amb)">${x.sitac}</span></td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="empty">Semua ODC sudah lengkap perizinan & sitac!</td></tr>';
+  modalField.hidden = false;
+};
+$('closeField').onclick = () => modalField.hidden = true;
+
+$('copyField').onclick = () => {
+  const list = D.filter(o => g(o).izin !== 'Terbit' || g(o).sitac !== 'Lengkap');
+  let text = '*DAFTAR TUGAS LAPANGAN ODC*
+
+';
+  list.forEach((o, i) => {
+    const x = g(o);
+    text += `${i+1}. *${o.odc}* (${o.sto})
+   Alamat: ${o.alamat}
+   Izin: ${x.izin} | Sitac: ${x.sitac}
+
+`;
+  });
+  navigator.clipboard.writeText(text);
+  alert('Daftar tugas lapangan berhasil disalin ke clipboard!');
+};
+
+$('btnLog').onclick = () => {
+  $('logTb').innerHTML = logs.log.map ? logs.map(l => `<tr><td>${l.time}</td><td>${l.role}</td><td><b>${l.action}</b> (${l.odc})</td><td>${l.detail}</td></tr>`).join('') : '';
+  modalLog.hidden = false;
+};
+// Correction for logTb render in script
+$('btnLog').onclick = () => {
+  $('logTb').innerHTML = logs.map(l => `<tr><td>${l.time}</td><td>${l.role}</td><td><b>${l.action}</b> (${l.odc})</td><td>${l.detail}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Belum ada log perubahan.</td></tr>';
+  modalLog.hidden = false;
+};
+$('closeLog').onclick = () => modalLog.hidden = true;
+
+const roleBadge = $('roleBadge');
+roleBadge.textContent = userRole;
+roleBadge.onclick = () => {
+  userRole = userRole === 'Editor' ? 'Viewer' : 'Editor';
+  localStorage.setItem('odc-role', userRole);
+  roleBadge.textContent = userRole;
+  refresh();
+  alert(`Peran diubah menjadi: ${userRole}`);
+};
+
+loadSample();
+$('src').textContent='sampel 22 ODC';
+setupSto();
+initMap();
+refresh();
+</script>
+</body>
+</html>
