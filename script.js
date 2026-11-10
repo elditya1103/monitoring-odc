@@ -228,15 +228,33 @@ function draw(){
   const marker=L.marker([o.lat,o.lon],{icon:L.divIcon({className:'custom-div-icon',html:`<div style="background:${stInfo.color};width:14px;height:14px;border-radius:50%;border:2px solid #fff"></div>`,iconSize:[14,14],iconAnchor:[7,7]})});
   
   marker.bindTooltip(`<b>${o.odc}</b> (${o.sto})<br>Pemilik: ${g(o).namaPemilik || '-'}<br>Status: ${stInfo.label}`);
-  marker.on('click',()=>{ sel=o.odc; openD(sel); table(); draw(); });
+  
+  // Saat marker diklik: pilih ODC, buka panel detail, dan zoom-in mulus ke titik koordinat ODC tersebut
+  marker.on('click',()=>{ 
+   sel=o.odc; 
+   openD(sel); 
+   table(); 
+   
+   // Kunci peta langsung zoom ke titik ini dengan level zoom 17 (tanpa fitBounds global)
+   if(isFinite(o.lat) && isFinite(o.lon)) {
+    map.setView([o.lat, o.lon], 17, {animate: true, pan: {duration: 0.5}});
+   }
+  });
+
   markersLayer.addLayer(marker);
   bounds.push([o.lat,o.lon]);
 
-  if(selectedLatLng && o.odc === sel) selectedLatLng = [o.lat, o.lon];
+  if(o.odc === sel) selectedLatLng = [o.lat, o.lon];
  });
 
- if(selectedLatLng) map.setView(selectedLatLng, 17);
- else if(bounds.length) map.fitBounds(bounds,{padding:[30,30],maxZoom:16});
+ // Jika ada ODC yang sedang dipilih (aktif), pusatkan ke titik tersebut dengan zoom dekat
+ if(selectedLatLng) {
+  map.setView(selectedLatLng, 17, {animate: true});
+ } else if(bounds.length && !map._initialBoundsFit) {
+  // Hanya fitBounds secara keseluruhan saat pertama kali muat data
+  map.fitBounds(bounds,{padding:[30,30],maxZoom:16});
+  map._initialBoundsFit = true;
+ }
 }
 
 function refresh(t=true){kpis();stoPanel();if(t)table();draw()}
