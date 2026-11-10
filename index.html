@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monitoring Perizinan & Sitac ODC</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+ <div><h1>Monitoring Perizinan & Sitac ODC</h1><div class="sub">RO PLK dan RO MTW · <span id="src"></span></div></div>
+ <div class="bar">
+  <span class="badge" id="demo">DATA CONTOH</span>
+  <button class="p" id="imp">Impor CSV dari Sheets</button>
+  <button id="exp">Ekspor CSV</button>
+  <button id="th">Terang/Gelap</button>
+  <input type="file" id="file" accept=".csv,.tsv,.txt" hidden>
+ </div>
+</header>
+<main>
+ <section class="kpis" id="kpis"></section>
+ <section class="bar">
+  <select id="fro"><option value="">Semua RO</option><option>PLK</option><option>MTW</option></select>
+  <select id="fsto"></select>
+  <select id="fst">
+   <option value="">Semua status</option>
+   <option value="none">Belum lengkap</option>
+   <option value="ok">Lengkap Paripurna (100% - Hijau Tua)</option>
+   <option value="sitac_gov">SITAC & Pemda (Hijau Standard)</option>
+   <option value="sitac_only">SITAC Saja (Hijau Muda)</option>
+   <option value="exp">Masa berlaku habis</option>
+   <option value="rec3m">Recurring Sisa ≤ 3 Bulan</option>
+   <option value="rec1y">Recurring Sisa ≤ 1 Tahun</option>
+   <option value="rec>1y">Recurring Sisa > 1 Tahun</option>
+  </select>
+  <input id="q" placeholder="Cari ODC / alamat / pemilik" style="min-width:200px">
+  <span class="sub" id="cnt"></span>
+ </section>
+ <section class="row2">
+  <div class="card"><h2>Peta sebaran ODC</h2>
+   <div class="mapw"><div id="map"></div></div>
+   <div class="leg">
+    <span><i class="dot" style="background:var(--red)"></i>0% (Belum ada)</span>
+    <span><i class="dot" style="background:var(--amb)"></i>Sebagian</span>
+    <span><i class="dot" style="background:#86efac"></i>SITAC Saja (Hijau Muda)</span>
+    <span><i class="dot" style="background:#22c55e"></i>SITAC & Pemda</span>
+    <span><i class="dot" style="background:var(--grn)"></i>Paripurna (Hijau Tua)</span>
+   </div>
+  </div>
+  <div class="card"><h2>Progres per STO</h2><div id="sto"></div></div>
+ </section>
+ <section class="card">
+  <h2>Daftar ODC & Dokumen Perizinan</h2>
+  <div class="tw">
+   <table>
+    <thead>
+     <tr>
+      <th>ODC</th>
+      <th>STO</th>
+      <th>Alamat</th>
+      <th>Pemilik / PIC</th>
+      <th>Biaya</th>
+      <th>WASAKA</th>
+      <th>1. Izin Pemerintah</th>
+      <th>2. Izin Masyarakat</th>
+      <th>3. SITAC & Masa Berlaku</th>
+      <th>4. Kwitansi / Pembayaran</th>
+      <th>Status & Warna</th>
+     </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+   </table>
+  </div>
+  <div class="sub" style="margin-top:6px">Catatan Pengamanan: SITAC (Pondasi Dasar / Hijau Muda) | + Izin Pemda (Hijau Standard) | + Izin Masyarakat & Kwitansi (Paripurna / Hijau Tua).</div>
+ </section>
+</main>
+<aside id="dp" hidden aria-label="Detail ODC"><div class="dph"><h2 id="dpt"></h2><button id="dpc">Tutup</button></div><div id="dpb"></div></aside>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="script.js"></script>
+</body>
+</html>
